@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SeriesFlow | Sequences & Series Visualizer</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=JetBrains+Mono:wght@400;700&display=swap"
+        rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            900: '#0c4a6e',
+                        },
+                        accent: {
+                            success: '#10b981',
+                            danger: '#ef4444',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        .math-font {
+            font-family: 'Times New Roman', serif;
+            font-style: italic;
+        }
+
+        /* Smooth transitions for graph paths */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        .active-nav {
+            background-color: #0ea5e9;
+            color: white;
+        }
+
+        canvas {
+            width: 100%;
+            height: 300px;
+        }
+    </style>
+</head>
+
+<body class="bg-slate-50 text-slate-800 antialiased h-screen flex overflow-hidden">
+
+    <!-- Mobile Menu Button -->
+    <button id="mobile-menu-btn"
+        class="md:hidden fixed top-4 right-4 z-50 bg-brand-600 text-white p-2 rounded-lg shadow-lg">
+        <i data-lucide="menu"></i>
+    </button>
+
+    <!-- Sidebar Navigation -->
+    <aside id="sidebar"
+        class="w-64 bg-slate-900 text-slate-300 flex-shrink-0 flex flex-col transition-transform transform -translate-x-full md:translate-x-0 fixed md:relative z-40 h-full border-r border-slate-800">
+        <div class="p-6 border-b border-slate-800">
+            <h1 class="text-2xl font-bold text-white flex items-center gap-2">
+                <i data-lucide="activity" class="text-brand-500"></i>
+                SeriesFlow
+            </h1>
+            <p class="text-xs text-slate-500 mt-1">Calculus Learning Lab</p>
+        </div>
+
+        <nav class="flex-1 overflow-y-auto py-4 space-y-1 px-3">
+            <button onclick="switchTab('home')"
+                class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-800 transition-colors active-nav"
+                id="btn-home">
+                <i data-lucide="home" class="w-5 h-5"></i>
+                <span>Dashboard</span>
+            </button>
+
+            <div class="px-4 pt-4 pb-2 text-xs font-semibold uppercase tracking-wider text-slate-500">Convergence Labs
+            </div>
+
+            <button onclick="switchTab('geometric')"
+                class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-800 transition-colors"
+                id="btn-geometric">
+                <i data-lucide="trending-up" class="w-5 h-5"></i>
+                <span>Geometric Series</span>
+            </button>
+
+            <button onclick="switchTab('ptest')"
+                class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-800 transition-colors"
+                id="btn-ptest">
+                <i data-lucide="divide-circle" class="w-5 h-5"></i>
+                <span>P-Series Test</span>
+            </button>
+
+            <button onclick="switchTab('tests')"
+                class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-800 transition-colors"
+                id="btn-tests">
+                <i data-lucide="flask-conical" class="w-5 h-5"></i>
+                <span>Tests Summary</span>
+            </button>
+
+            <button onclick="switchTab('power')"
+                class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-800 transition-colors"
+                id="btn-power">
+                <i data-lucide="zap" class="w-5 h-5"></i>
+                <span>Power Series</span>
+            </button>
+        </nav>
+
+        <div class="p-4 border-t border-slate-800">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-full bg-brand-500 flex items-center justify-center text-white font-bold">DS
+                </div>
+                <div>
+                    <p class="text-sm font-medium text-white">Desai Sneh</p>
+                    <p class="text-xs text-slate-500">Comp. Eng - Sem 1</p>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 h-full overflow-y-auto relative w-full">
+
+        <!-- HOME SECTION -->
+        <section id="view-home" class="p-6 max-w-5xl mx-auto space-y-8 animate-fade-in">
+            <!-- Header Card -->
+            <div
+                class="bg-gradient-to-r from-brand-600 to-brand-900 rounded-2xl p-8 text-white shadow-xl relative overflow-hidden">
+                <div class="absolute top-0 right-0 p-12 opacity-10">
+                    <i data-lucide="sigma" class="w-48 h-48"></i>
+                </div>
+                <div class="relative z-10">
+                    <div
+                        class="inline-block px-3 py-1 bg-white/20 rounded-full text-xs font-medium mb-4 backdrop-blur-sm">
+                        University Submission Project</div>
+                    <h2 class="text-4xl font-bold mb-2">Sequences & Series</h2>
+                    <p class="text-brand-100 max-w-2xl text-lg">An interactive exploration of mathematical convergence,
+                        divergence, and infinite series tests.</p>
+
+                    <div class="mt-8 flex flex-wrap gap-4">
+                        <div class="bg-white/10 backdrop-blur-md rounded-lg p-3 border border-white/10">
+                            <p class="text-xs text-brand-200 uppercase">Student</p>
+                            <p class="font-semibold">Desai Sneh Shirishkumar</p>
+                        </div>
+                        <div class="bg-white/10 backdrop-blur-md rounded-lg p-3 border border-white/10">
+                            <p class="text-xs text-brand-200 uppercase">Institute</p>
+                            <p class="font-semibold">S.S. Agrawal Institute</p>
+                        </div>
+                        <div class="bg-white/10 backdrop-blur-md rounded-lg p-3 border border-white/10">
+                            <p class="text-xs text-brand-200 uppercase">Course</p>
+                            <p class="font-semibold">B.E. Computer Engineering</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Syllabus Overview Grid -->
+            <h3 class="text-2xl font-bold text-slate-800">Syllabus Overview</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div
+                    class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
+                    <div class="w-10 h-10 bg-blue-100 text-blue-600 rounded-lg flex items-center justify-center mb-4"><i
+                            data-lucide="infinity"></i></div>
+                    <h4 class="font-bold text-lg mb-2">Infinite Series</h4>
+                    <p class="text-slate-600 text-sm">Understanding sequences, partial sums, and the fundamental concept
+                        of convergence vs divergence.</p>
+                </div>
+                <div
+                    class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
+                    <div class="w-10 h-10 bg-green-100 text-green-600 rounded-lg flex items-center justify-center mb-4">
+                        <i data-lucide="check-circle-2"></i></div>
+                    <h4 class="font-bold text-lg mb-2">Convergence Tests</h4>
+                    <p class="text-slate-600 text-sm">Geometric, P-test, D’ Alembert’s ratio, Cauchy’s root, Integral,
+                        and Comparison tests.</p>
+                </div>
+                <div
+                    class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
+                    <div
+                        class="w-10 h-10 bg-purple-100 text-purple-600 rounded-lg flex items-center justify-center mb-4">
+                        <i data-lucide="radius"></i></div>
+                    <h4 class="font-bold text-lg mb-2">Power Series</h4>
+                    <p class="text-slate-600 text-sm">Radius of convergence, interval of convergence, conditional and
+                        absolute convergence.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- GEOMETRIC SERIES SECTION -->
+        <section id="view-geometric" class="p-6 max-w-6xl mx-auto hidden space-y-6">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center">
+                <div>
+                    <h2 class="text-3xl font-bold text-slate-800">Geometric Series Test</h2>
+                    <p class="text-slate-500">Visualizing <span class="math-font font-bold">Σ a·r<sup>n</sup></span></p>
+                </div>
+                <div id="geo-status"
+                    class="mt-4 md:mt-0 px-4 py-2 rounded-full text-sm font-bold bg-gray-100 text-gray-500">
+                    Adjust controls to begin
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- Controls -->
+                <div class="lg:col-span-1 space-y-6">
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                        <h3 class="font-semibold mb-4 flex items-center gap-2"><i data-lucide="sliders"
+                                class="w-4 h-4"></i> Parameters</h3>
+
+                        <div class="mb-6">
+                            <label class="block text-sm font-medium text-slate-700 mb-2">Common Ratio (<span
+                                    class="math-font">r</span>)</label>
+                            <input type="range" id="geo-r" min="-2" max="2" step="0.1" value="0.5"
+                                class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-brand-600">
+                            <div class="flex justify-between text-xs text-slate-500 mt-1">
+                                <span>-2</span>
+                                <span id="geo-r-val" class="font-mono font-bold text-brand-600">0.5</span>
+                                <span>2</span>
+                            </div>
+                        </div>
+
+                        <div class="mb-6">
+                            <label class="block text-sm font-medium text-slate-700 mb-2">First Term (<span
+                                    class="math-font">a</span>)</label>
+                            <input type="range" id="geo-a" min="-5" max="5" step="0.5" value="2"
+                                class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-brand-600">
+                            <div class="flex justify-between text-xs text-slate-500 mt-1">
+                                <span>-5</span>
+                                <span id="geo-a-val" class="font-mono font-bold text-brand-600">2</span>
+                                <span>5</span>
+                            </div>
+                        </div>
+
+                        <div class="bg-slate-50 p-4 rounded-lg text-sm border border-slate-200">
+                            <p class="font-semibold mb-2 text-slate-900">The Rules:</p>
+                            <ul class="list-disc list-inside space-y-1 text-slate-600">
+                                <li>If <span class="math-font">|r| < 1</span> : <span
+                                                class="text-green-600 font-bold">Converges</span></li>
+                                <li>If <span class="math-font">|r| ≥ 1</span> : <span
+                                        class="text-red-600 font-bold">Diverges</span></li>
+                                <li>Sum = <span class="math-font">a / (1 - r)</span></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Visualization -->
+                <div class="lg:col-span-2">
+                    <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 h-full flex flex-col">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="font-semibold text-slate-700">Sequence Plot</h3>
+                            <div id="geo-sum-display" class="font-mono text-sm bg-slate-100 px-3 py-1 rounded">Sum: --
+                            </div>
+                        </div>
+                        <div
+                            class="flex-1 w-full bg-slate-50 rounded-lg relative overflow-hidden border border-slate-100">
+                            <canvas id="geoCanvas"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- P-SERIES SECTION -->
+        <section id="view-ptest" class="p-6 max-w-6xl mx-auto hidden space-y-6">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center">
+                <div>
+                    <h2 class="text-3xl font-bold text-slate-800">P-Series Test</h2>
+                    <p class="text-slate-500">Visualizing <span class="math-font font-bold">Σ 1 / n<sup>p</sup></span>
+                    </p>
+                </div>
+                <div id="ptest-status"
+                    class="mt-4 md:mt-0 px-4 py-2 rounded-full text-sm font-bold bg-gray-100 text-gray-500">
+                    Adjust p to begin
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- Controls -->
+                <div class="lg:col-span-1 space-y-6">
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                        <h3 class="font-semibold mb-4 flex items-center gap-2"><i data-lucide="sliders"
+                                class="w-4 h-4"></i> Parameters</h3>
+
+                        <div class="mb-6">
+                            <label class="block text-sm font-medium text-slate-700 mb-2">Power (<span
+                                    class="math-font">p</span>)</label>
+                            <input type="range" id="ptest-p" min="0.1" max="3" step="0.1" value="0.5"
+                                class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-brand-600">
+                            <div class="flex justify-between text-xs text-slate-500 mt-1">
+                                <span>0.1</span>
+                                <span id="ptest-p-val" class="font-mono font-bold text-brand-600">0.5</span>
+                                <span>3</span>
+                            </div>
+                        </div>
+
+                        <div class="bg-slate-50 p-4 rounded-lg text-sm border border-slate-200">
+                            <p class="font-semibold mb-2 text-slate-900">The Rules:</p>
+                            <ul class="list-disc list-inside space-y-1 text-slate-600">
+                                <li>If <span class="math-font">p > 1</span> : <span
+                                        class="text-green-600 font-bold">Converges</span></li>
+                                <li>If <span class="math-font">p ≤ 1</span> : <span
+                                        class="text-red-600 font-bold">Diverges</span></li>
+                                <li>Harmonic Series (p=1) Diverges.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Visualization -->
+                <div class="lg:col-span-2">
+                    <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 h-full flex flex-col">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="font-semibold text-slate-700">Decay Visualization</h3>
+                            <div class="text-xs text-slate-400">Green zone = Fast enough decay for convergence</div>
+                        </div>
+                        <div
+                            class="flex-1 w-full bg-slate-50 rounded-lg relative overflow-hidden border border-slate-100">
+                            <canvas id="ptestCanvas"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TESTS SUMMARY SECTION -->
+        <section id="view-tests" class="p-6 max-w-6xl mx-auto hidden space-y-8">
+            <h2 class="text-3xl font-bold text-slate-800 border-b border-slate-200 pb-4">Convergence Tests Reference
+            </h2>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Ratio Test -->
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="bg-blue-50 p-4 border-b border-blue-100">
+                        <h3 class="font-bold text-blue-800">D’ Alembert’s Ratio Test</h3>
+                    </div>
+                    <div class="p-6 space-y-4">
+                        <p class="text-sm text-slate-600">Used for series involving factorials (!) or exponentials.</p>
+                        <div class="bg-slate-800 text-white p-4 rounded-lg font-mono text-center text-sm">
+                            L = lim(n→∞) |a<sub>n+1</sub> / a<sub>n</sub>|
+                        </div>
+                        <ul class="text-sm space-y-2">
+                            <li class="flex items-center gap-2">
+                                <div class="w-2 h-2 rounded-full bg-green-500"></div> L < 1 : Absolutely Convergent</li>
+                            <li class="flex items-center gap-2">
+                                <div class="w-2 h-2 rounded-full bg-red-500"></div> L > 1 : Divergent
+                            </li>
+                            <li class="flex items-center gap-2">
+                                <div class="w-2 h-2 rounded-full bg-yellow-500"></div> L = 1 : Inconclusive
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Root Test -->
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="bg-purple-50 p-4 border-b border-purple-100">
+                        <h3 class="font-bold text-purple-800">Cauchy’s Root Test</h3>
+                    </div>
+                    <div class="p-6 space-y-4">
+                        <p class="text-sm text-slate-600">Best when terms involve powers of n, like
+                            (something)<sup>n</sup>.</p>
+                        <div class="bg-slate-800 text-white p-4 rounded-lg font-mono text-center text-sm">
+                            L = lim(n→∞) <sup>n</sup>√|a<sub>n</sub>|
+                        </div>
+                        <ul class="text-sm space-y-2">
+                            <li class="flex items-center gap-2">
+                                <div class="w-2 h-2 rounded-full bg-green-500"></div> L < 1 : Absolutely Convergent</li>
+                            <li class="flex items-center gap-2">
+                                <div class="w-2 h-2 rounded-full bg-red-500"></div> L > 1 : Divergent
+                            </li>
+                            <li class="flex items-center gap-2">
+                                <div class="w-2 h-2 rounded-full bg-yellow-500"></div> L = 1 : Inconclusive
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Comparison Test -->
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="bg-orange-50 p-4 border-b border-orange-100">
+                        <h3 class="font-bold text-orange-800">Direct Comparison Test</h3>
+                    </div>
+                    <div class="p-6 space-y-4">
+                        <p class="text-sm text-slate-600">Compare unknown series a<sub>n</sub> with known series
+                            b<sub>n</sub>.</p>
+                        <div class="space-y-3">
+                            <div class="p-3 bg-slate-50 rounded border border-slate-100">
+                                <p class="text-xs font-bold text-slate-500 uppercase mb-1">Convergence</p>
+                                <p class="text-sm">If b<sub>n</sub> converges and 0 ≤ a<sub>n</sub> ≤ b<sub>n</sub>,
+                                    then a<sub>n</sub> converges.</p>
+                            </div>
+                            <div class="p-3 bg-slate-50 rounded border border-slate-100">
+                                <p class="text-xs font-bold text-slate-500 uppercase mb-1">Divergence</p>
+                                <p class="text-sm">If b<sub>n</sub> diverges and 0 ≤ b<sub>n</sub> ≤ a<sub>n</sub>, then
+                                    a<sub>n</sub> diverges.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Alternating Series -->
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="bg-teal-50 p-4 border-b border-teal-100">
+                        <h3 class="font-bold text-teal-800">Alternating Series Test</h3>
+                    </div>
+                    <div class="p-6 space-y-4">
+                        <p class="text-sm text-slate-600">For series that switch signs: Σ (-1)<sup>n</sup> b<sub>n</sub>
+                        </p>
+                        <p class="text-sm font-semibold">Converges if both are true:</p>
+                        <ol class="list-decimal list-inside text-sm space-y-1 pl-2">
+                            <li>lim(n→∞) b<sub>n</sub> = 0</li>
+                            <li>b<sub>n+1</sub> ≤ b<sub>n</sub> (Terms are decreasing)</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- POWER SERIES SECTION -->
+        <section id="view-power" class="p-6 max-w-4xl mx-auto hidden animate-fade-in">
+            <h2 class="text-3xl font-bold text-slate-800 mb-6">Power Series</h2>
+
+            <div class="bg-white p-8 rounded-xl shadow-lg border border-slate-200 text-center">
+                <p class="text-lg mb-6">A power series centered at <span class="math-font">c</span> looks like:</p>
+
+                <div class="text-3xl font-mono text-brand-600 mb-8 p-4 bg-blue-50 rounded-lg inline-block">
+                    Σ a<sub>n</sub>(x - c)<sup>n</sup>
+                </div>
+
+                <div class="text-left max-w-2xl mx-auto space-y-6">
+                    <div class="flex gap-4 items-start">
+                        <div
+                            class="w-8 h-8 rounded-full bg-brand-100 text-brand-600 flex items-center justify-center font-bold flex-shrink-0">
+                            R</div>
+                        <div>
+                            <h4 class="font-bold text-lg">Radius of Convergence (R)</h4>
+                            <p class="text-slate-600 text-sm mt-1">Found using Ratio Test. The series converges for |x -
+                                c| < R.</p>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-4 items-start">
+                        <div
+                            class="w-8 h-8 rounded-full bg-brand-100 text-brand-600 flex items-center justify-center font-bold flex-shrink-0">
+                            I</div>
+                        <div>
+                            <h4 class="font-bold text-lg">Interval of Convergence</h4>
+                            <p class="text-slate-600 text-sm mt-1">The actual values of x. Usually (c-R, c+R). You must
+                                test the endpoints individually!</p>
+                        </div>
+                    </div>
+
+                    <div class="mt-8 p-4 border border-dashed border-slate-300 rounded-lg">
+                        <h5 class="font-bold text-sm mb-2 text-slate-500 uppercase">Interactive Concept: Absolute vs
+                            Conditional</h5>
+                        <p class="text-sm text-slate-600">If Σ|a<sub>n</sub>| converges, it's <strong
+                                class="text-green-600">Absolutely Convergent</strong> (implies regular convergence).</p>
+                        <p class="text-sm text-slate-600 mt-2">If Σa<sub>n</sub> converges but Σ|a<sub>n</sub>|
+                            diverges, it's <strong class="text-yellow-600">Conditionally Convergent</strong> (like the
+                            Alternating Harmonic Series).</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        // --- Navigation Logic ---
+        function switchTab(tabId) {
+            // Hide all sections
+            const sections = document.querySelectorAll('section');
+            sections.forEach(s => s.classList.add('hidden'));
+
+            // Show target
+            document.getElementById(`view-${tabId}`).classList.remove('hidden');
+
+            // Update Nav visual state
+            document.querySelectorAll('.nav-item').forEach(btn => {
+                btn.classList.remove('active-nav');
+                btn.classList.remove('bg-slate-800'); // Remove hover state persistence
+            });
+            document.getElementById(`btn-${tabId}`).classList.add('active-nav');
+
+            // Trigger canvas resize/redraw if needed
+            if (tabId === 'geometric') updateGeometric();
+            if (tabId === 'ptest') updatePTest();
+
+            // Close mobile menu if open
+            if (window.innerWidth < 768) {
+                document.getElementById('sidebar').classList.add('-translate-x-full');
+            }
+        }
+
+        // Mobile Menu Toggle
+        document.getElementById('mobile-menu-btn').addEventListener('click', () => {
+            document.getElementById('sidebar').classList.toggle('-translate-x-full');
+        });
+
+        // --- Initialize Icons ---
+        lucide.createIcons();
+
+        // --- Custom Canvas Graphing Engine ---
+
+        // Helper to setup canvas for High DPI
+        function setupCanvas(canvas) {
+            const dpr = window.devicePixelRatio || 1;
+            const rect = canvas.getBoundingClientRect();
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            const ctx = canvas.getContext('2d');
+            ctx.scale(dpr, dpr);
+            return { ctx, width: rect.width, height: rect.height };
+        }
+
+        // 1. Geometric Series Visualizer
+        const geoR = document.getElementById('geo-r');
+        const geoA = document.getElementById('geo-a');
+
+        function updateGeometric() {
+            const r = parseFloat(geoR.value);
+            const a = parseFloat(geoA.value);
+
+            // Update UI Labels
+            document.getElementById('geo-r-val').textContent = r.toFixed(1);
+            document.getElementById('geo-a-val').textContent = a;
+
+            // Logic Check
+            const converges = Math.abs(r) < 1;
+            const statusDiv = document.getElementById('geo-status');
+            const sumDisplay = document.getElementById('geo-sum-display');
+
+            if (converges) {
+                const sum = a / (1 - r);
+                statusDiv.textContent = "Converges";
+                statusDiv.className = "mt-4 md:mt-0 px-4 py-2 rounded-full text-sm font-bold bg-green-100 text-green-700 border border-green-200";
+                sumDisplay.textContent = `Sum ≈ ${sum.toFixed(4)}`;
+            } else {
+                statusDiv.textContent = "Diverges";
+                statusDiv.className = "mt-4 md:mt-0 px-4 py-2 rounded-full text-sm font-bold bg-red-100 text-red-700 border border-red-200";
+                sumDisplay.textContent = "Sum: ∞ / undefined";
+            }
+
+            // Draw Graph
+            const canvas = document.getElementById('geoCanvas');
+            const { ctx, width, height } = setupCanvas(canvas);
+
+            ctx.clearRect(0, 0, width, height);
+
+            // Axes
+            const centerY = height / 2;
+            ctx.beginPath();
+            ctx.strokeStyle = '#e2e8f0';
+            ctx.moveTo(0, centerY);
+            ctx.lineTo(width, centerY); // X Axis
+            ctx.moveTo(40, 0);
+            ctx.lineTo(40, height); // Y Axis
+            ctx.stroke();
+
+            // Plot Points
+            const numPoints = 15;
+            const stepX = (width - 60) / numPoints;
+            let currentVal = a;
+
+            // Auto-scaling Y
+            // Find max amplitude to scale graph nicely
+            let maxVal = Math.abs(a);
+            for (let i = 0; i < 5; i++) maxVal = Math.max(maxVal, Math.abs(a * Math.pow(r, i)));
+            const scaleY = (height / 2 - 20) / (maxVal > 0 ? maxVal * 1.5 : 1);
+
+            ctx.beginPath();
+            ctx.strokeStyle = converges ? '#10b981' : '#ef4444';
+            ctx.lineWidth = 2;
+
+            for (let n = 0; n < numPoints; n++) {
+                const term = a * Math.pow(r, n);
+                const x = 40 + (n * stepX);
+                const y = centerY - (term * scaleY);
+
+                // Draw connecting line
+                if (n === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+
+                // Draw Point
+                ctx.fillStyle = converges ? '#059669' : '#dc2626';
+                ctx.beginPath();
+                ctx.arc(x, y, 4, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Return to path for line
+                ctx.moveTo(x, y);
+            }
+            ctx.stroke();
+        }
+
+        geoR.addEventListener('input', updateGeometric);
+        geoA.addEventListener('input', updateGeometric);
+
+        // 2. P-Series Visualizer
+        const pInput = document.getElementById('ptest-p');
+
+        function updatePTest() {
+            const p = parseFloat(pInput.value);
+            document.getElementById('ptest-p-val').textContent = p.toFixed(1);
+
+            const converges = p > 1;
+            const statusDiv = document.getElementById('ptest-status');
+
+            if (converges) {
+                statusDiv.textContent = "Converges";
+                statusDiv.className = "mt-4 md:mt-0 px-4 py-2 rounded-full text-sm font-bold bg-green-100 text-green-700 border border-green-200";
+            } else {
+                statusDiv.textContent = "Diverges";
+                statusDiv.className = "mt-4 md:mt-0 px-4 py-2 rounded-full text-sm font-bold bg-red-100 text-red-700 border border-red-200";
+            }
+
+            const canvas = document.getElementById('ptestCanvas');
+            const { ctx, width, height } = setupCanvas(canvas);
+
+            ctx.clearRect(0, 0, width, height);
+
+            // Draw Background "Converge Zone"
+            // Visual trick: show area under curve
+
+            // Axes
+            const padding = 40;
+            const bottomY = height - padding;
+
+            ctx.beginPath();
+            ctx.strokeStyle = '#94a3b8';
+            ctx.moveTo(padding, 0);
+            ctx.lineTo(padding, bottomY); // Y
+            ctx.lineTo(width, bottomY); // X
+            ctx.stroke();
+
+            // Plot 1/n^p
+            const numPoints = 20;
+            const stepX = (width - padding * 2) / numPoints;
+            const scaleY = (height - padding * 2); // Max height is 1
+
+            // Draw Bars (Riemann Sum Visual)
+            for (let n = 1; n <= numPoints; n++) {
+                const val = 1 / Math.pow(n, p);
+                const x = padding + ((n - 1) * stepX);
+                const barHeight = val * scaleY;
+
+                ctx.fillStyle = converges ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)';
+                ctx.fillRect(x, bottomY - barHeight, stepX - 2, barHeight);
+            }
+
+            // Draw Curve overlay
+            ctx.beginPath();
+            ctx.strokeStyle = '#334155';
+            ctx.lineWidth = 2;
+            for (let pixelX = 0; pixelX < (width - padding * 2); pixelX += 2) {
+                // map pixelX to n
+                const n = 1 + (pixelX / stepX);
+                const val = 1 / Math.pow(n, p);
+                const y = bottomY - (val * scaleY);
+
+                if (pixelX === 0) ctx.moveTo(padding + pixelX, y);
+                else ctx.lineTo(padding + pixelX, y);
+            }
+            ctx.stroke();
+        }
+
+        pInput.addEventListener('input', updatePTest);
+
+        // Initial render
+        window.addEventListener('load', () => {
+            switchTab('home');
+        });
+
+        // Handle window resize for canvas
+        window.addEventListener('resize', () => {
+            if (!document.getElementById('view-geometric').classList.contains('hidden')) updateGeometric();
+            if (!document.getElementById('view-ptest').classList.contains('hidden')) updatePTest();
+        });
+
+    </script>
+</body>
+
+</html>
